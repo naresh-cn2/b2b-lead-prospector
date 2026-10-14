@@ -8,6 +8,7 @@
     "templateId": "python-empty"
   },
   "dockerfile": "./Dockerfile",
+  "output": "./output_schema.json",
   "storages": {
     "dataset": "./dataset_schema.json"
   },
