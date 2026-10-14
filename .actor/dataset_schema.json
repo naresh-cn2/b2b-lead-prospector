@@ -1,0 +1,72 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "properties": {
+      "business_name": {
+        "type": "string",
+        "title": "Business Name"
+      },
+      "category": {
+        "type": "string",
+        "title": "Category"
+      },
+      "target_location": {
+        "type": "string",
+        "title": "Target Location"
+      },
+      "phone": {
+        "type": "string",
+        "title": "Phone"
+      },
+      "website": {
+        "type": "string",
+        "title": "Website"
+      },
+      "address": {
+        "type": "string",
+        "title": "Address"
+      },
+      "email": {
+        "type": "string",
+        "title": "Email"
+      },
+      "facebook": {
+        "type": "string",
+        "title": "Facebook"
+      },
+      "instagram": {
+        "type": "string",
+        "title": "Instagram"
+      },
+      "linkedin": {
+        "type": "string",
+        "title": "LinkedIn"
+      },
+      "rating": {
+        "type": "string",
+        "title": "Rating"
+      }
+    }
+  },
+  "views": {
+    "overview": {
+      "title": "Overview",
+      "transformation": {
+        "fields": [
+          "business_name",
+          "category",
+          "phone",
+          "email",
+          "website",
+          "address",
+          "linkedin",
+          "instagram",
+          "facebook"
+        ]
+      },
+      "display": {
+        "component": "table"
+      }
+    }
+  }
+}
