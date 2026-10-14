@@ -13,42 +13,79 @@ HEADERS = {
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
 }
 
 EMAIL_REGEX = re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
+GENERIC_DOMAINS = ["sentry.io", "wixpress.com"]
+ASSET_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".css", ".js"]
 
 def clean_text(text: str | None) -> str:
     if not text:
         return ""
     return re.sub(r"\s+", " ", text).strip()
 
+def is_valid_email(email: str) -> bool:
+    lower = email.lower()
+    if any(lower.endswith(ext) for ext in ASSET_EXTENSIONS):
+        return False
+    if any(domain in lower for domain in GENERIC_DOMAINS):
+        return False
+    return True
+
+SEM = asyncio.Semaphore(5)
+
+async def fetch_text(client: httpx.AsyncClient, url: str) -> str | None:
+    try:
+        resp = await client.get(url, headers=HEADERS, timeout=10.0, follow_redirects=True)
+        if resp.status_code == 200:
+            return resp.text
+    except Exception:
+        pass
+    return None
+
 async def enrich_website(client: httpx.AsyncClient, website_url: str):
     if not website_url or not website_url.startswith("http"):
         return {"email": "", "linkedin": "", "facebook": "", "instagram": ""}
+    async with SEM:
+        data = {"email": "", "linkedin": "", "facebook": "", "instagram": ""}
+        try:
+            # Normalize URL
+            parsed = urllib.parse.urlparse(website_url)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            homepage_text = await fetch_text(client, website_url)
+            if homepage_text:
+                soup = BeautifulSoup(homepage_text, "html.parser")
+                emails = EMAIL_REGEX.findall(homepage_text)
+                valid_emails = [e for e in emails if is_valid_email(e)]
+                if valid_emails:
+                    data["email"] = valid_emails[0]
 
-    data = {"email": "", "linkedin": "", "facebook": "", "instagram": ""}
-    try:
-        resp = await client.get(website_url, headers=HEADERS, timeout=8.0)
-        if resp.status_code == 200:
-            soup = BeautifulSoup(resp.text, "html.parser")
-            emails = EMAIL_REGEX.findall(resp.text)
-            valid_emails = [
-                e for e in emails 
-                if not e.endswith((".png", ".jpg", ".jpeg", ".webp", ".svg"))
-            ]
-            if valid_emails:
-                data["email"] = valid_emails[0]
+                for a in soup.find_all("a", href=True):
+                    href = a["href"]
+                    href_low = href.lower()
+                    if not data["linkedin"] and "linkedin.com/company" in href_low:
+                        data["linkedin"] = href
+                    elif not data["facebook"] and "facebook.com/" in href_low and not any(x in href_low for x in ["sharer", "share.php", "plugins"]):
+                        data["facebook"] = href
+                    elif not data["instagram"] and "instagram.com/" in href_low:
+                        data["instagram"] = href
 
-            for a in soup.find_all("a", href=True):
-                href = a["href"].lower()
-                if "linkedin.com/company" in href and not data["linkedin"]:
-                    data["linkedin"] = a["href"]
-                elif "facebook.com/" in href and not any(x in href for x in ["sharer", "share.php"]) and not data["facebook"]:
-                    data["facebook"] = a["href"]
-                elif "instagram.com/" in href and not data["instagram"]:
-                    data["instagram"] = a["href"]
-    except Exception:
-        pass
+            # Subpage traversal if email not found
+            if not data["email"]:
+                for path in ["/contact", "/about", "/team", "/get-in-touch"]:
+                    sub_url = urllib.parse.urljoin(base_url + "/", path.lstrip("/"))
+                    sub_text = await fetch_text(client, sub_url)
+                    if not sub_text:
+                        continue
+                    emails = EMAIL_REGEX.findall(sub_text)
+                    valid_emails = [e for e in emails if is_valid_email(e)]
+                    if valid_emails:
+                        data["email"] = valid_emails[0]
+                        break
+        except Exception:
+            pass
     return data
 
 async def scrape_directory_page(client: httpx.AsyncClient, query: str, location: str, page: int, enrich: bool):
@@ -137,6 +174,10 @@ async def main() -> None:
                 for item in leads:
                     collected_leads.append(item)
                     await Actor.push_data(item)
+                    try:
+                        await Actor.charge(event_name="lead-extracted")
+                    except Exception as e:
+                        Actor.log.warning(f"Charging failed for lead {item.get('business_name')}: {e}")
                     if len(collected_leads) >= max_results:
                         break
 

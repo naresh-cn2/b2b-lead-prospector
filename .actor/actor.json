@@ -3,9 +3,20 @@
   "name": "b2b-lead-prospector",
   "title": "B2B Lead Prospector & Contact Enrichment",
   "description": "Extracts verified local business leads with direct websites, emails, phones, and social links.",
-  "version": "1.0",
+  "version": "1.1",
   "meta": {
     "templateId": "python-empty"
   },
-  "dockerfile": "./Dockerfile"
+  "dockerfile": "./Dockerfile",
+  "pricing": {
+    "customEvents": [
+      {
+        "eventName": "lead-extracted",
+        "title": "Lead Extracted",
+        "description": "Charged for each successfully enriched business lead added to the dataset.",
+        "price": 0.0025,
+        "currency": "USD"
+      }
+    ]
+  }
 }
