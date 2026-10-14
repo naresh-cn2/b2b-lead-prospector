@@ -8,6 +8,9 @@
     "templateId": "python-empty"
   },
   "dockerfile": "./Dockerfile",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
   "pricing": {
     "customEvents": [
       {
