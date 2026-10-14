@@ -1,0 +1,11 @@
+﻿{
+  "actorSpecification": 1,
+  "name": "b2b-lead-prospector",
+  "title": "B2B Lead Prospector & Contact Enrichment",
+  "description": "Extracts verified local business leads with direct websites, emails, phones, and social links.",
+  "version": "1.0",
+  "meta": {
+    "templateId": "python-empty"
+  },
+  "dockerfile": "./Dockerfile"
+}

@@ -1,0 +1,36 @@
+﻿{
+  "title": "B2B Lead Prospector Input Schema",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "searchQuery": {
+      "title": "Business Category / Niche",
+      "type": "string",
+      "description": "Category or keyword (e.g. Dentists, Commercial Roofing, Accountants)",
+      "editor": "textfield",
+      "prefill": "Dentists"
+    },
+    "location": {
+      "title": "City and State",
+      "type": "string",
+      "description": "Target geographic location (e.g. Austin, TX)",
+      "editor": "textfield",
+      "prefill": "Austin, TX"
+    },
+    "maxResults": {
+      "title": "Max Leads to Collect",
+      "type": "integer",
+      "description": "Total business profiles to extract and enrich",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 500
+    },
+    "extractSocials": {
+      "title": "Enrich with Emails & Social Links",
+      "type": "boolean",
+      "description": "Visit the target website to parse business email and social media profiles",
+      "default": true
+    }
+  },
+  "required": ["searchQuery", "location"]
+}
